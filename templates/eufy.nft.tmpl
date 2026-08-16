@@ -1,0 +1,48 @@
+#!/usr/sbin/nft -f
+# Firewall/NAT for the isolated AP. Rendered from config.env; loaded on boot via
+# /etc/nftables.conf. Effect:
+#   * the PRINTER reaches nothing on the internet (fully isolated), but is kept
+#     "believing it is online" so it stays associated: its ping, DNS and NTP are
+#     answered locally, and its cloud TLS ports are redirected to a dead-end sink;
+#   * every OTHER client on the AP (your control device) gets normal internet via
+#     masquerade out the uplink.
+
+flush ruleset
+
+table inet eufy_iso {
+    set printer_mac { type ether_addr; elements = { @PRINTER_MAC@ } }
+    set printer_ip  { type ipv4_addr;  elements = { @PRINTER_IP@ } }
+
+    chain forward {
+        type filter hook forward priority filter; policy drop;
+
+        # printer -> anywhere : DROP (this is the real isolation)
+        ether saddr @printer_mac counter drop comment "printer_out_drop"
+        ip    saddr @printer_ip  counter drop comment "printer_ip_out_drop"
+        ip    daddr @printer_ip  counter drop comment "printer_ip_in_drop"
+
+        # other AP clients -> internet via the uplink, and return traffic
+        iifname "@AP_IFACE@" oifname "@UPLINK_IFACE@" counter accept comment "client_to_uplink"
+        iifname "@UPLINK_IFACE@" oifname "@AP_IFACE@" ct state established,related counter accept comment "return_traffic"
+    }
+}
+
+table ip eufy_iso_nat {
+    chain prerouting {
+        type nat hook prerouting priority dstnat; policy accept;
+        # keep the printer online-looking, all answered locally:
+        ip protocol icmp ether saddr @PRINTER_MAC@ counter dnat to @AP_IP@ comment "printer_ping_local"
+        udp dport 53  ether saddr @PRINTER_MAC@ counter dnat to @AP_IP@ comment "printer_dns_local"
+        tcp dport 53  ether saddr @PRINTER_MAC@ counter dnat to @AP_IP@ comment "printer_dns_local_tcp"
+        udp dport 123 ether saddr @PRINTER_MAC@ counter dnat to @AP_IP@ comment "printer_ntp_local"
+        # cloud TLS ports -> dead-end sink (TCP connects, nothing forwarded):
+        tcp dport { 443, 8789 } ether saddr @PRINTER_MAC@ counter redirect to :8080 comment "printer_cloud_sink"
+    }
+
+    chain postrouting {
+        type nat hook postrouting priority srcnat; policy accept;
+        # NAT other AP clients out to the internet (source-only; nothing rewrites
+        # the printer, and the printer is dropped in forward anyway).
+        ip saddr @AP_SUBNET@ oifname "@UPLINK_IFACE@" counter masquerade comment "client_nat"
+    }
+}

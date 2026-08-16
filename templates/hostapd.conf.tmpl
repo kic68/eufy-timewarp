@@ -1,0 +1,22 @@
+# Isolated access point for the printer. Rendered from config.env by install.sh.
+# Contains the PSK -> installed mode 0600.
+interface=@AP_IFACE@
+driver=nl80211
+ssid=@AP_SSID@
+
+# 2.4 GHz, plain 802.11g for maximum client compatibility (the printer may not
+# do 5 GHz). ieee80211d + country_code keep the radio legal in your region.
+country_code=@AP_COUNTRY@
+ieee80211d=1
+hw_mode=g
+channel=@AP_CHANNEL@
+
+# WPA2-PSK (CCMP/AES)
+auth_algs=1
+wpa=2
+wpa_key_mgmt=WPA-PSK
+rsn_pairwise=CCMP
+wpa_passphrase=@AP_PASSPHRASE@
+
+ignore_broadcast_ssid=0
+macaddr_acl=0

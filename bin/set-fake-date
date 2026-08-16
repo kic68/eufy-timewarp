@@ -1,0 +1,38 @@
+#!/bin/bash
+# Change the date served by the fake NTP server, then restart it.
+#
+#   sudo set-fake-date "2026-05-04 12:00:00"
+#   sudo set-fake-date 2026-05-04            # midnight assumed
+#   sudo set-fake-date                       # show current setting
+#
+set -euo pipefail
+CONF=/etc/default/eufy-fake-ntp
+SERVICE=eufy-fake-ntp
+
+if [[ $# -eq 0 ]]; then
+    grep '^FAKE_DATE=' "$CONF" 2>/dev/null || echo "no $CONF"
+    systemctl is-active --quiet "$SERVICE" && echo "service: active" || echo "service: NOT running"
+    exit 0
+fi
+
+NEW="$*"
+[[ "$NEW" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]] && NEW="$NEW 00:00:00"
+if ! [[ "$NEW" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}\ [0-9]{2}:[0-9]{2}:[0-9]{2}$ ]]; then
+    echo "error: expected 'YYYY-MM-DD HH:MM:SS' (or 'YYYY-MM-DD'), got: $NEW" >&2
+    exit 1
+fi
+TZ=UTC python3 -c 'import sys,time; time.strptime(sys.argv[1],"%Y-%m-%d %H:%M:%S")' "$NEW" 2>/dev/null \
+    || { echo "error: not a real date: $NEW" >&2; exit 1; }
+
+sed -i "s|^FAKE_DATE=.*|FAKE_DATE=\"$NEW\"|" "$CONF"
+systemctl restart "$SERVICE"
+sleep 1
+if systemctl is-active --quiet "$SERVICE"; then
+    echo "now serving: $NEW (UTC)"
+    echo "the printer picks it up on its next NTP poll; to force it now:"
+    echo "  sudo systemctl restart hostapd   # re-associates -> re-syncs immediately"
+else
+    echo "service failed to restart:" >&2
+    systemctl status "$SERVICE" --no-pager -l | tail -20 >&2
+    exit 1
+fi

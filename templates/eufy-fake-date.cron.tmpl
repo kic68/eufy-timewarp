@@ -1,0 +1,4 @@
+# Reset the fake clock to FAKE_DATE once a day so it never drifts forward past
+# the cartridge's real expiry (the served time advances in real time).
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+30 4 * * * root /usr/local/bin/set-fake-date "@FAKE_DATE@" >> /var/log/eufy-fake-date.log 2>&1

@@ -1,0 +1,14 @@
+# systemd-networkd: give the AP interface its static IP and keep DHCP off it.
+# ConfigureWithoutCarrier keeps the address present even with no station associated.
+[Match]
+Name=@AP_IFACE@
+
+[Network]
+Address=@AP_IP@/@AP_CIDR@
+ConfigureWithoutCarrier=yes
+DHCP=no
+LinkLocalAddressing=no
+IPv6AcceptRA=no
+
+[Link]
+RequiredForOnline=no

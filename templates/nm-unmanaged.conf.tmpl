@@ -1,0 +1,6 @@
+# If NetworkManager is present, tell it to leave the AP interface alone so it
+# does not fight hostapd / the static IP. Installed only when NM is detected.
+# NOTE: NetworkManager does NOT merge this key across files -- if you already
+# have an unmanaged-devices line elsewhere, put all interfaces in ONE file.
+[keyfile]
+unmanaged-devices=interface-name:@AP_IFACE@

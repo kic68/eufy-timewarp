@@ -1,0 +1,55 @@
+# dnsmasq: DHCP + DNS for the isolated AP. Rendered from config.env.
+
+# --- serve ONLY on the AP interface (never the uplink / systemd-resolved) ----
+interface=@AP_IFACE@
+bind-dynamic
+except-interface=lo
+no-hosts
+domain-needed
+bogus-priv
+filter-AAAA          # AP is IPv4-only; stops IPv6 answers bypassing the overrides
+
+# --- DHCP --------------------------------------------------------------------
+dhcp-range=@DHCP_START@,@DHCP_END@,255.255.255.0,12h
+dhcp-option=option:router,@AP_IP@
+dhcp-option=option:dns-server,@AP_IP@
+dhcp-option=option:ntp-server,@AP_IP@
+dhcp-authoritative
+# pin the printer to a fixed address
+dhcp-host=@PRINTER_MAC@,@PRINTER_IP@,eufy-printer,12h
+
+# Give the gateway a name so the printer's reverse lookup doesn't NXDOMAIN
+# (some firmware disassociates if it does).
+domain=eufy-lab
+host-record=eufy-gw.eufy-lab,@AP_IP@
+
+# --- FAKE CLOCK: send every time source to our fake NTP server ---------------
+address=/pool.ntp.org/@AP_IP@
+address=/time.apple.com/@AP_IP@
+address=/time.android.com/@AP_IP@
+address=/time.google.com/@AP_IP@
+address=/time1.google.com/@AP_IP@
+address=/time2.google.com/@AP_IP@
+address=/time3.google.com/@AP_IP@
+address=/time4.google.com/@AP_IP@
+
+# --- FORCE THE CONTROL APP INTO LAN MODE -------------------------------------
+# The eufyMake app only drives the printer locally when it believes it is
+# offline. Its connectivity-check hostnames resolve to us instead of the real
+# internet, so it drops to LAN mode. (Side effect: these specific domains won't
+# load on the control device while it is on this AP -- general browsing still
+# works. See docs/SETUP.md.)
+address=/www.google.com/@AP_IP@
+address=/www.microsoft.com/@AP_IP@
+address=/www.baidu.com/@AP_IP@
+address=/www.taobao.com/@AP_IP@
+address=/www.qq.com/@AP_IP@
+
+# --- sinkhole the vendor cloud (DNS layer; nftables also drops it) -----------
+address=/ankermake.com/0.0.0.0
+address=/eufylife.com/0.0.0.0
+address=/eufymake.com/0.0.0.0
+
+# logging -- handy while setting up; comment out later if noisy
+log-queries
+log-dhcp
