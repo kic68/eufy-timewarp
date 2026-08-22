@@ -78,8 +78,11 @@ sudo set-fake-date "2026-05-04 12:00:00"   # or: sudo set-fake-date 2026-05-04
 sudo set-fake-date                         # show current
 ```
 
-A daily cron (`/etc/cron.d/eufy-fake-date`) resets it to your configured
-`FAKE_DATE` so it never drifts forward toward the real expiry.
+A monthly cron (`/etc/cron.d/eufy-fake-date`) resets it back to your configured
+`FAKE_DATE`. Between resets the served time advances in real time, so the printer
+sees up to ~1 month of elapsed time. That keeps the date short of the real expiry
+while still letting scheduled printer maintenance (head cleaning, etc.) come due,
+which a daily reset would prevent by pinning the clock to a single day.
 
 One rule: never serve the real, current time while relying on a cartridge. A
 forward jump makes the printer read it as expired within a minute. It's fully

@@ -82,7 +82,10 @@ up a WiFi network that becomes the printer's entire world:
 - **It's a live check, and nothing is written to the cartridge.** Set the clock
   forward and it reads expired. Set it back and it's valid again. A wrong-time
   reading does no permanent damage. So never let the printer see the real time
-  while you're relying on a cartridge. A daily cron keeps the fake date pinned.
+  while you're relying on a cartridge. A monthly cron resets the fake date back
+  to `FAKE_DATE`, keeping it within ~1 month of the start (short of the real
+  expiry) while still letting enough time pass for scheduled printer maintenance
+  to come due.
 - **Printing and the plate-camera snapshot work** with the faked clock, as long as
   the control device is on the same WiFi as the printer, so the app talks to it
   locally (LAN mode). Over the cloud the same actions fail, because the faked clock

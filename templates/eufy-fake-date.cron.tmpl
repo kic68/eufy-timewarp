@@ -1,4 +1,9 @@
-# Reset the fake clock to FAKE_DATE once a day so it never drifts forward past
-# the cartridge's real expiry (the served time advances in real time).
+# Reset the fake clock back to FAKE_DATE once a month. The served time advances
+# in real time from FAKE_DATE, so between resets the printer sees up to ~1 month
+# of real elapsed time. That is deliberate: a daily reset pins the clock to a
+# single day, and any printer maintenance scheduled on elapsed calendar time
+# (head cleaning, etc.) would never come due. Monthly resets let that time pass
+# while keeping the served date within ~1 month of FAKE_DATE, safely short of the
+# cartridge's real expiry. Runs 04:30 on the 1st of each month.
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-30 4 * * * root /usr/local/bin/set-fake-date "@FAKE_DATE@" >> /var/log/eufy-fake-date.log 2>&1
+30 4 1 * * root /usr/local/bin/set-fake-date "@FAKE_DATE@" >> /var/log/eufy-fake-date.log 2>&1

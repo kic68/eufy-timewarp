@@ -95,7 +95,7 @@ install -m 644 systemd/eufy-fake-ntp.service  /etc/systemd/system/eufy-fake-ntp.
 install -m 644 systemd/eufy-keepalive.service /etc/systemd/system/eufy-keepalive.service
 ```
 
-## 8. Daily fake-date reset (cron)
+## 8. Monthly fake-date reset (cron)
 
 ```bash
 render templates/eufy-fake-date.cron.tmpl /etc/cron.d/eufy-fake-date 644

@@ -76,7 +76,7 @@ render "$HERE/templates/eufy-fake-ntp.default.tmpl" /etc/default/eufy-fake-ntp 6
 install -m 644 "$HERE/systemd/eufy-fake-ntp.service"  /etc/systemd/system/eufy-fake-ntp.service
 install -m 644 "$HERE/systemd/eufy-keepalive.service" /etc/systemd/system/eufy-keepalive.service
 
-echo "==> daily fake-date reset (cron)"
+echo "==> monthly fake-date reset (cron)"
 render "$HERE/templates/eufy-fake-date.cron.tmpl" /etc/cron.d/eufy-fake-date 644
 
 echo "==> firewall/NAT (nftables) + IP forwarding"
