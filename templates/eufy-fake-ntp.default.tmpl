@@ -1,5 +1,8 @@
 # Environment for the eufy-fake-ntp service. Change the date with
 # `sudo set-fake-date "YYYY-MM-DD HH:MM:SS"` (which rewrites this + restarts).
+# BIND=0.0.0.0 (not @AP_IP@): the printer's NTP is DNAT'd to this box and DHCP
+# hands out @AP_IP@ as the NTP server, so 0.0.0.0 covers both without racing the
+# systemd-networkd address assignment at boot.
 FAKE_DATE="@FAKE_DATE@"
-BIND="@AP_IP@"
+BIND="0.0.0.0"
 PORT="123"

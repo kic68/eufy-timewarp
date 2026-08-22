@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Remove eufy-iso and return the machine to a plain host. Does not uninstall the
+# Remove eufy-timewarp and return the machine to a plain host. Does not uninstall the
 # hostapd/dnsmasq packages (apt remove them yourself if you want).
 set -uo pipefail
 [[ $EUID -eq 0 ]] || { echo "run with sudo: sudo ./uninstall.sh"; exit 1; }
@@ -9,12 +9,12 @@ systemctl disable --now eufy-fake-ntp eufy-keepalive hostapd dnsmasq 2>/dev/null
 
 echo "==> removing files"
 rm -f /etc/systemd/system/eufy-fake-ntp.service /etc/systemd/system/eufy-keepalive.service
-rm -f /etc/default/eufy-fake-ntp /etc/dnsmasq.d/eufy-iso.conf
+rm -f /etc/default/eufy-fake-ntp /etc/dnsmasq.d/eufy-timewarp.conf
 rm -f /etc/systemd/network/20-eufy-ap.network
 rm -f /etc/NetworkManager/conf.d/99-eufy-unmanaged.conf
-rm -f /etc/cron.d/eufy-fake-date /etc/sysctl.d/99-eufy-iso.conf
+rm -f /etc/cron.d/eufy-fake-date /etc/sysctl.d/99-eufy-timewarp.conf
 rm -f /etc/hostapd/hostapd.conf
-rm -rf /usr/local/lib/eufy-iso /usr/local/bin/set-fake-date
+rm -rf /usr/local/lib/eufy-timewarp /usr/local/bin/set-fake-date
 
 echo "==> flushing firewall + forwarding"
 nft flush ruleset 2>/dev/null || true

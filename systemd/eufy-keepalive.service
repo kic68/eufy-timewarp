@@ -1,12 +1,12 @@
 [Unit]
-Description=eufy-iso keepalive (HTTP probe responder + TCP sink so the printer stays associated)
+Description=eufy-timewarp keepalive (HTTP probe responder + TCP sink so the printer stays associated)
 After=network.target systemd-networkd.service
 Wants=network.target
 
 [Service]
 Type=simple
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 /usr/local/lib/eufy-iso/keepalive.py
+ExecStart=/usr/bin/python3 /usr/local/lib/eufy-timewarp/keepalive.py
 Restart=always
 RestartSec=3
 DynamicUser=yes

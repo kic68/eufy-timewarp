@@ -1,5 +1,5 @@
 [Unit]
-Description=eufy-iso fake NTP server (serves a configurable fake date)
+Description=eufy-timewarp fake NTP server (serves a configurable fake date)
 After=network.target systemd-networkd.service
 Wants=network.target
 
@@ -8,7 +8,7 @@ Type=simple
 EnvironmentFile=/etc/default/eufy-fake-ntp
 Environment=TZ=UTC
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 /usr/local/lib/eufy-iso/fake_ntp.py
+ExecStart=/usr/bin/python3 /usr/local/lib/eufy-timewarp/fake_ntp.py
 Restart=always
 RestartSec=3
 DynamicUser=yes

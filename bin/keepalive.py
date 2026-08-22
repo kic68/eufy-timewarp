@@ -34,7 +34,8 @@ class Probe(http.server.BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Connection", "close")
         self.end_headers()
-        if body:
+        # HEAD must not carry a body, even though the headers advertise its length.
+        if body and self.command != "HEAD":
             self.wfile.write(body)
 
     def do_GET(self):

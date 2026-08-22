@@ -10,7 +10,7 @@ bogus-priv
 filter-AAAA          # AP is IPv4-only; stops IPv6 answers bypassing the overrides
 
 # --- DHCP --------------------------------------------------------------------
-dhcp-range=@DHCP_START@,@DHCP_END@,255.255.255.0,12h
+dhcp-range=@DHCP_START@,@DHCP_END@,@AP_NETMASK@,12h
 dhcp-option=option:router,@AP_IP@
 dhcp-option=option:dns-server,@AP_IP@
 dhcp-option=option:ntp-server,@AP_IP@

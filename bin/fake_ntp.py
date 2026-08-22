@@ -13,14 +13,16 @@ The served time advances in real time from FAKE_DATE. It never touches the host
 clock. The critical detail is echoing the client's transmit timestamp back into
 the originate field, or NTP clients discard the reply.
 """
-import socket, struct, time, os
+import socket, struct, time, calendar, os
 
 NTP_EPOCH = 2208988800
 FAKE_DATE = os.environ.get("FAKE_DATE", "2026-05-04 00:00:00")
 PORT = int(os.environ.get("PORT", "123"))
 BIND = os.environ.get("BIND", "0.0.0.0")
 
-fake_base = time.mktime(time.strptime(FAKE_DATE, "%Y-%m-%d %H:%M:%S"))
+# calendar.timegm interprets the parsed time as UTC unconditionally, so the
+# served date is correct regardless of the host/service timezone.
+fake_base = calendar.timegm(time.strptime(FAKE_DATE, "%Y-%m-%d %H:%M:%S"))
 real_base = time.time()
 
 

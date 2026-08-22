@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
-# eufy-iso installer. Reads config.env, renders the templates, installs
+# eufy-timewarp installer. Reads config.env, renders the templates, installs
 # everything, and starts the isolated AP. Re-runnable (idempotent-ish).
+#
+# NOTE: if this script fails partway, or your distro isn't Debian-ish enough for
+# it to work, you can do every step by hand. docs/MANUAL-SETUP.md walks through
+# the exact same steps in the same order, one command at a time.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
@@ -19,11 +23,17 @@ done
 ip link show "$AP_IFACE" >/dev/null 2>&1 || { echo "AP_IFACE '$AP_IFACE' not found"; exit 1; }
 ip link show "$UPLINK_IFACE" >/dev/null 2>&1 || { echo "UPLINK_IFACE '$UPLINK_IFACE' not found"; exit 1; }
 
+# derive the dotted-decimal netmask from AP_CIDR (for dnsmasq's dhcp-range)
+[[ "$AP_CIDR" =~ ^[0-9]+$ && "$AP_CIDR" -ge 1 && "$AP_CIDR" -le 32 ]] || { echo "AP_CIDR must be 1-32: $AP_CIDR"; exit 1; }
+AP_NETMASK=$(( 0xffffffff ^ ((1 << (32 - AP_CIDR)) - 1) ))
+AP_NETMASK="$(( (AP_NETMASK >> 24) & 255 )).$(( (AP_NETMASK >> 16) & 255 )).$(( (AP_NETMASK >> 8) & 255 )).$(( AP_NETMASK & 255 ))"
+
 render() {   # render <template> <dest> [mode]
     sed -e "s|@AP_IFACE@|$AP_IFACE|g" -e "s|@UPLINK_IFACE@|$UPLINK_IFACE|g" \
         -e "s|@AP_SSID@|$AP_SSID|g" -e "s|@AP_PASSPHRASE@|$AP_PASSPHRASE|g" \
         -e "s|@AP_COUNTRY@|$AP_COUNTRY|g" -e "s|@AP_CHANNEL@|$AP_CHANNEL|g" \
         -e "s|@AP_IP@|$AP_IP|g" -e "s|@AP_CIDR@|$AP_CIDR|g" -e "s|@AP_SUBNET@|$AP_SUBNET|g" \
+        -e "s|@AP_NETMASK@|$AP_NETMASK|g" \
         -e "s|@DHCP_START@|$DHCP_START|g" -e "s|@DHCP_END@|$DHCP_END|g" \
         -e "s|@PRINTER_MAC@|$PRINTER_MAC|g" -e "s|@PRINTER_IP@|$PRINTER_IP|g" \
         -e "s|@FAKE_DATE@|$FAKE_DATE|g" "$1" > "$2"
@@ -36,9 +46,9 @@ apt-get update -qq
 apt-get install -y -qq hostapd dnsmasq python3 >/dev/null
 
 echo "==> scripts"
-install -d /usr/local/lib/eufy-iso
-install -m 755 "$HERE/bin/fake_ntp.py"  /usr/local/lib/eufy-iso/fake_ntp.py
-install -m 755 "$HERE/bin/keepalive.py" /usr/local/lib/eufy-iso/keepalive.py
+install -d /usr/local/lib/eufy-timewarp
+install -m 755 "$HERE/bin/fake_ntp.py"  /usr/local/lib/eufy-timewarp/fake_ntp.py
+install -m 755 "$HERE/bin/keepalive.py" /usr/local/lib/eufy-timewarp/keepalive.py
 install -m 755 "$HERE/bin/set-fake-date" /usr/local/bin/set-fake-date
 
 echo "==> access point (hostapd)"
@@ -59,7 +69,7 @@ if systemctl list-unit-files | grep -q '^NetworkManager\.service'; then
 fi
 
 echo "==> DHCP + DNS (dnsmasq)"
-render "$HERE/templates/dnsmasq-eufy.conf.tmpl" /etc/dnsmasq.d/eufy-iso.conf 644
+render "$HERE/templates/dnsmasq-eufy.conf.tmpl" /etc/dnsmasq.d/eufy-timewarp.conf 644
 
 echo "==> fake NTP + keepalive services"
 render "$HERE/templates/eufy-fake-ntp.default.tmpl" /etc/default/eufy-fake-ntp 644
@@ -71,7 +81,7 @@ render "$HERE/templates/eufy-fake-date.cron.tmpl" /etc/cron.d/eufy-fake-date 644
 
 echo "==> firewall/NAT (nftables) + IP forwarding"
 render "$HERE/templates/eufy.nft.tmpl" /etc/nftables.conf 755
-echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/99-eufy-iso.conf
+echo 'net.ipv4.ip_forward=1' > /etc/sysctl.d/99-eufy-timewarp.conf
 sysctl -q -w net.ipv4.ip_forward=1
 nft -c -f /etc/nftables.conf
 
