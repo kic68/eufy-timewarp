@@ -43,7 +43,8 @@ render() {   # render <template> <dest> [mode]
 echo "==> packages"
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
-apt-get install -y -qq hostapd dnsmasq python3 >/dev/null
+apt-get install -y -qq dnsmasq python3 >/dev/null
+[[ "$CONFIGURE_WIFI" == "no" ]] || echo apt-get install -y -qq hostapd >/dev/null
 
 echo "==> scripts"
 install -d /usr/local/lib/eufy-timewarp
@@ -51,11 +52,14 @@ install -m 755 "$HERE/bin/fake_ntp.py"  /usr/local/lib/eufy-timewarp/fake_ntp.py
 install -m 755 "$HERE/bin/keepalive.py" /usr/local/lib/eufy-timewarp/keepalive.py
 install -m 755 "$HERE/bin/set-fake-date" /usr/local/bin/set-fake-date
 
-echo "==> access point (hostapd)"
-install -d /etc/hostapd
-render "$HERE/templates/hostapd.conf.tmpl" /etc/hostapd/hostapd.conf 600
-sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
-systemctl unmask hostapd >/dev/null 2>&1 || true
+if [[ "$CONFIGURE_WIFI" != "no" ]]
+then
+    echo "==> access point (hostapd)"
+    install -d /etc/hostapd
+    render "$HERE/templates/hostapd.conf.tmpl" /etc/hostapd/hostapd.conf 600
+    sed -i 's|^#\?DAEMON_CONF=.*|DAEMON_CONF="/etc/hostapd/hostapd.conf"|' /etc/default/hostapd
+    systemctl unmask hostapd >/dev/null 2>&1 || true
+fi
 
 echo "==> AP interface IP (systemd-networkd)"
 install -d /etc/systemd/network
@@ -92,8 +96,11 @@ systemctl restart systemd-networkd
 nft -f /etc/nftables.conf
 ip addr replace "$AP_IP/$AP_CIDR" dev "$AP_IFACE" 2>/dev/null || true
 systemctl enable --now eufy-fake-ntp eufy-keepalive >/dev/null
-systemctl enable hostapd >/dev/null 2>&1 || true
-systemctl restart hostapd
+if [[ "$CONFIGURE_WIFI" != "no" ]]
+then
+    systemctl enable hostapd >/dev/null 2>&1 || true
+    systemctl restart hostapd
+fi
 systemctl restart dnsmasq
 
 echo
